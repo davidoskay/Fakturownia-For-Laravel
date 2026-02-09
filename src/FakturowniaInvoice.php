@@ -62,7 +62,11 @@ class FakturowniaInvoice extends FakturowniaDataObject
             'first_name' => "",
             'last_name' => "",
             'name' => "",
+            /** Imię i nazwisko odbiorcy (np. podpis na fakturze). Pusty "" = bez podpisu odbiorcy. */
+            'person' => "",
             'tax_number' => null,
+            /** @see KSeF: "" (polski NIP), "nip_ue", "other", "" */
+            'tax_no_kind' => "",
             'street' => "",
             'post_code' => "",
             'city' => "",
@@ -157,6 +161,12 @@ class FakturowniaInvoice extends FakturowniaDataObject
         );
 
         $invoice->isBuyerCompany = ($json['buyer_company'] > 0 ? true : false);
+        if (isset($json['buyer_tax_no_kind'])) {
+            $invoice->buyer['tax_no_kind'] = $json['buyer_tax_no_kind'];
+        }
+        if (isset($json['buyer_person'])) {
+            $invoice->buyer['person'] = $json['buyer_person'];
+        }
         if(!$invoice->isBuyerCompany) {
             $invoice->buyer['first_name'] = $json['buyer_first_name'];
             $invoice->buyer['last_name'] = $json['buyer_last_name'];
@@ -216,7 +226,9 @@ class FakturowniaInvoice extends FakturowniaDataObject
             'buyer_name' => $this->buyer['name'],
             'buyer_first_name' => $this->buyer['first_name'],
             'buyer_last_name' => $this->buyer['last_name'],
+            'buyer_person' => $this->buyer['person'] ?? '',
             'buyer_tax_no' => $this->buyer['tax_number'],
+            'buyer_tax_no_kind' => $this->buyer['tax_no_kind'] ?? '',
             'buyer_street' => $this->buyer['street'],
             'buyer_post_code' => $this->buyer['post_code'],
             'buyer_city' => $this->buyer['city'],
