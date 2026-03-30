@@ -16,6 +16,8 @@ class FakturowniaInvoice extends FakturowniaDataObject
     public ?string $pattern = null;
     public ?int $departmentID = null;
     public string $description = "";
+    /** @var list<array{kind: string, content: string, position_index?: int|null, id?: int, row_number?: int}> KSeF: uwagi (kind + content na rekord) */
+    public array $descriptions = [];
     public string $paymentType = "";
     public string $language = "";
     public string $currency = "";
@@ -35,6 +37,11 @@ class FakturowniaInvoice extends FakturowniaDataObject
 
     public float $pricePaid = 0.0;
     public ?array $other = [];
+
+    /** KSeF: podstawa stawki NP — pole faktury (nie pozycji), wartości: export_service, export_service_eu, not_specified */
+    public ?string $npTaxKind = null;
+    /** Zgodnie z API Fakturowni: przy m.in. export_service_eu wymagane true */
+    public bool $reverseCharge = false;
 
     public function __construct($kind = FakturowniaInvoiceKind::INVOICE_VAT, $number = "", $language = "pl", $currency = "PLN", $other = [])
     {
@@ -118,6 +125,15 @@ class FakturowniaInvoice extends FakturowniaDataObject
         array_push($this->positions, $newPosition);
     }
 
+    public function addDescription(string $kind, string $content, ?int $positionIndex = null): void
+    {
+        $item = ['kind' => $kind, 'content' => $content];
+        if ($positionIndex !== null) {
+            $item['position_index'] = $positionIndex;
+        }
+        $this->descriptions[] = $item;
+    }
+
     public function getID()
     {
         return $this->id;
@@ -196,6 +212,19 @@ class FakturowniaInvoice extends FakturowniaDataObject
             $invoice->addPosition($position);
         }
 
+        if (isset($json['description'])) {
+            $invoice->description = (string) $json['description'];
+        }
+        if (!empty($json['descriptions']) && is_array($json['descriptions'])) {
+            $invoice->descriptions = array_values($json['descriptions']);
+        }
+        if (isset($json['np_tax_kind']) && $json['np_tax_kind'] !== '') {
+            $invoice->npTaxKind = (string) $json['np_tax_kind'];
+        }
+        if (array_key_exists('reverse_charge', $json)) {
+            $invoice->reverseCharge = filter_var($json['reverse_charge'], FILTER_VALIDATE_BOOLEAN);
+        }
+
         $invoice->pricePaid = $json['paid'];
 
         // ----------[ DATA PROCESSING END ]----------
@@ -263,6 +292,17 @@ class FakturowniaInvoice extends FakturowniaDataObject
             $data['skonto_active'] = "1";
             $data['skonto_discount_value'] = $this->skonto['discount'];
             $data['skonto_discount_date'] = $this->skonto['date'];
+        }
+
+        if (count($this->descriptions) > 0) {
+            $data['descriptions'] = $this->descriptions;
+        }
+
+        if ($this->npTaxKind !== null && $this->npTaxKind !== '') {
+            $data['np_tax_kind'] = $this->npTaxKind;
+        }
+        if ($this->reverseCharge) {
+            $data['reverse_charge'] = true;
         }
 
         $data['positions'] = array();

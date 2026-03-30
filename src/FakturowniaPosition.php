@@ -60,7 +60,6 @@ class FakturowniaPosition extends FakturowniaDataObject
         if (isset($json['gtu_code']) && !empty($json['gtu_code'])) {
             $position->gtu_code = $json['gtu_code'];
         }
-
         $position->description = $json['description'];
         $position->quantityUnit = $json['quantity_unit'];
 
