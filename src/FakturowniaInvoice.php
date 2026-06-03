@@ -19,6 +19,7 @@ class FakturowniaInvoice extends FakturowniaDataObject
     /** @var list<array{kind: string, content: string, position_index?: int|null, id?: int, row_number?: int}> KSeF: uwagi (kind + content na rekord) */
     public array $descriptions = [];
     public string $paymentType = "";
+    public ?string $place = null;
     public string $language = "";
     public string $currency = "";
 
@@ -143,7 +144,10 @@ class FakturowniaInvoice extends FakturowniaDataObject
     {
         $invoice = new FakturowniaInvoice($json['kind'], $json['number'], $json['lang']);
         $invoice->id = $json['id'];
-        $invoice->paymentType = $json['payment_type'];
+        $invoice->paymentType = $json['payment_type'] ?? '';
+        if (isset($json['place']) && $json['place'] !== '') {
+            $invoice->place = (string) $json['place'];
+        }
         $invoice->pattern = $json['pattern'];
         $invoice->departmentID = $json['department_id'];
         $invoice->status = $json['status'];
@@ -243,6 +247,8 @@ class FakturowniaInvoice extends FakturowniaDataObject
             'status' => $this->status,
             'issue_date' => $this->issueDate,
             'sell_date' => $this->sellDate,
+            'payment_type' => $this->paymentType,
+            'place' => $this->place,
             'lang' => $this->language,
             'currency' => $this->currency,
             'seller_name' => $this->seller['name'],
@@ -311,7 +317,10 @@ class FakturowniaInvoice extends FakturowniaDataObject
             array_push($data['positions'], $fakturowniaPosition->toArray());
         }
 
-        $data['paid'] = $this->pricePaid;
+        // Nie wysyłaj paid=0 — API/UI Fakturowni potrafi wtedy oznaczyć dokument jako opłacony
+        if ($this->status === 'paid' || $this->pricePaid > 0) {
+            $data['paid'] = $this->pricePaid;
+        }
 
         $data = array_merge($data, $this->other);
 
