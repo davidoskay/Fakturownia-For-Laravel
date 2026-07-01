@@ -248,7 +248,6 @@ class FakturowniaInvoice extends FakturowniaDataObject
             'issue_date' => $this->issueDate,
             'sell_date' => $this->sellDate,
             'payment_type' => $this->paymentType,
-            'place' => $this->place,
             'lang' => $this->language,
             'currency' => $this->currency,
             'seller_name' => $this->seller['name'],
@@ -271,6 +270,10 @@ class FakturowniaInvoice extends FakturowniaDataObject
             'buyer_phone' => $this->buyer['phone'],
             'buyer_company' => ($this->isBuyerCompany ? "1" : "0")
         );
+
+        if ($this->place !== null && $this->place !== '') {
+            $data['place'] = $this->place;
+        }
 
         if (isset($this->recipient) && count($this->recipient) > 0) {
             $recipient = array(
